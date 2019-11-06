@@ -31,6 +31,6 @@ if req.status_code == 200:
         'mintemp':int(minTempMonth)
     }
 
-    firebase.put('maxandmin/','maxtemp',int(maxTempMonth))
-    firebase.put('maxandmin/','mintemp',int(minTempMonth))
+    firebase.put('maxTemp/','maxTempMonth',int(maxTempMonth))
+    firebase.put('minTemp/','minTempMonth',int(minTempMonth))
 

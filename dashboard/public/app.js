@@ -7,7 +7,7 @@
     authDomain: "iotsensor-cc9bd.firebaseapp.com",
     databaseURL: "https://iotsensor-cc9bd.firebaseio.com",
     storageBucket: "iotsensor-cc9bd.appspot.com",
-    messagingSenderId: "999139819416",
+    messagingSenderId: "999139819416"
   };
   firebase.initializeApp(config);
 
@@ -18,8 +18,8 @@
   var umidRef = db.ref('humidity');
   var tempRef2 = db.ref('temperature2');
   var umidRef2 = db.ref('humidity2');
-
-
+  var maxRef = db.ref('maxTemp');
+  var minRef = db.ref('minTemp');
 
 
   // Registra as funções que atualizam os gráficos e dados atuais da telemetria
@@ -27,9 +27,12 @@
   umidRef.on('value', onNewData('currentUmid', 'umidLineChart' , 'Umidade', '%'));
   tempRef2.on('value', onNewData('currentTemp2', 'tempLineChart2' , 'Temperatura', 'C°'));
   umidRef2.on('value', onNewData('currentUmid2', 'umidLineChart2' , 'Umidade', '%'));
+  maxRef.on('value', onNewData('maxTemp', 'maxTempChart' , 'Temperatura', 'Cº'));
+  minRef.on('value', onNewData('minTemp', 'minTempChart' , 'Temperatura', 'Cº'));
 
 
-/
+
+
   // Registrar função ao alterar valor de presença
   presenceRef.on('value', function(snapshot){
     var value = snapshot.val();
