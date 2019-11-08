@@ -30,41 +30,7 @@
   maxRef.on('value', onNewData('maxTemp', 'maxTempChart' , 'Temperatura', 'Cº'));
   minRef.on('value', onNewData('minTemp', 'minTempChart' , 'Temperatura', 'Cº'));
 
-
-
-
-  // Registrar função ao alterar valor de presença
-  presenceRef.on('value', function(snapshot){
-    var value = snapshot.val();
-    var el = document.getElementById('currentPresence')
-    if(value){
-      el.classList.add('green-text');
-    }else{
-      el.classList.remove('green-text');
-    }
-  });
-
-  // Registrar função ao alterar valor da lampada
-  var currentLampValue = false;
-  lampRef.on('value', function(snapshot){
-    var value = snapshot.val();
-    var el = document.getElementById('currentLamp')
-    if(value){
-      el.classList.add('amber-text');
-    }else{
-      el.classList.remove('amber-text');
-    }
-    currentLampValue = !!value;
-  });
-
-  // Registrar função de click no botão de lampada
-  var btnLamp = document.getElementById('btn-lamp');
-  btnLamp.addEventListener('click', function(evt){
-    lampRef.set(!currentLampValue);
-  });
-
 })();
-
 
 // Retorna uma função que de acordo com as mudanças dos dados
 // Atualiza o valor atual do elemento, com a metrica passada (currentValueEl e metric)
@@ -73,18 +39,45 @@ function onNewData(currentValueEl, chartEl, label, metric){
   return function(snapshot){
     var readings = snapshot.val();
     if(readings){
+        // var currentValue;
+        // var data = [];
+        // for(var key = 0; key < 3; key++){
+        //   currentValue = readings[key]
+        //   data.push(currentValue);
+        // }
+
+
+
+
         var currentValue;
         var data = [];
-        for(var key in readings){
-          currentValue = readings[key]
+        var keys = Object.keys(readings);
+        for(var i = 0; i < keys.length; i++){
+          var k = keys[i];
+          currentValue = readings[k]
           data.push(currentValue);
         }
 
         document.getElementById(currentValueEl).innerText = currentValue + ' ' + metric;
-        buildLineChart(chartEl, label, data);
+        var lenKey = keys.length;
+        console.log(data[11]);
+        if(keys.length > 1){
+          buildLineChart(chartEl, label, data.slice(-13));
+        
+
+        }
+        if(keys.length == 1) {
+          buildLineChart(chartEl, label, data);
+          document.getElementById(currentValueEl).innerText = currentValue + ' ' + metric;
+
+
+        }
+        
     }
   }
 }
+
+
 
 // Constroi um gráfico de linha no elemento (el) com a descrição (label) e os
 // dados passados (data)
@@ -92,8 +85,9 @@ function buildLineChart(el, label, data){
   var elNode = document.getElementById(el);
   new Chart(elNode, {
     type: 'line',
+
     data: {
-        labels: new Array(data.length).fill(""),
+        labels: ["12h","11h","10h","9h","8h","7h","6h","5h","4h","3h","2h","1h","0h"],
         datasets: [{
             label: label,
             data: data,
@@ -104,6 +98,16 @@ function buildLineChart(el, label, data){
             backgroundColor: "#F9A825",
             borderColor: "#F9A825"
         }]
+    },
+    options: {
+      scales: {
+        xAxes: [{
+          scaleLabel: {
+            display: true,
+            labelString: 'Horas atrás'
+          }
+        }]
+      }     
     }
   });
 
