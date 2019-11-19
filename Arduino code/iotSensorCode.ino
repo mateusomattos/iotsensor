@@ -2,6 +2,9 @@
 #include <FirebaseArduino.h>
 #include <Ticker.h>
 #include "DHT.h"
+#include <NTPClient.h>//Biblioteca do NTP.
+#include <WiFiUDP.h>//Biblioteca do UDP.
+
 
 // Set these to run example.
 #define FIREBASE_HOST "iotsensor-cc9bd.firebaseio.com"
@@ -55,6 +58,12 @@ void setupFirebase(){
   //Firebase.setBool("presence", false);
 }
 
+
+WiFiUDP udp;//Cria um objeto "UDP".
+NTPClient ntp(udp, "a.st1.ntp.br", -2* 3600, 60000);//Cria um objeto "NTP" com as configurações.
+
+
+
 void setup() {
   Serial.begin(115200);
 
@@ -65,38 +74,64 @@ void setup() {
 
   // Registra o ticker para publicar de tempos em tempos
   ticker.attach_ms(PUBLISH_INTERVAL, publish);
+  ntp.begin();//Inicia o NTP.
+  ntp.forceUpdate();//Força o Update.
 }
 
 void loop() {
 
   float humidity = 0;
+  bool fail = false;
   
   // Apenas publique quando passar o tempo determinado
   if(publishNewState){
     Serial.println("Publish new State");
     // Obtem os dados do sensor DHT 
+    // Humidade
     humidity = dht.readHumidity();
     Serial.print("Humidity:");
     Serial.println(humidity);
+
+    // Temperatura
     float temperature = dht.readTemperature();
     Serial.print("Temperature:");
     Serial.println(temperature);
+
+    // Hora
+    String hora = ntp.getFormattedTime();//Armazena na váriavel HORA, o horario atual.
+    Serial.print("Hora: ");
+    Serial.println(hora);
+
     if(!isnan(humidity) && !isnan(temperature)){
-      // Manda para o firebase
-      String string1 = Firebase.pushFloat("temperature", temperature);
-      Serial.print("Temperature failed = ");
-      Serial.println(Firebase.failed());
-      Serial.print("Key=");
-      Serial.println(string1);
-      Firebase.pushFloat("humidity", humidity);
-      Serial.print("Humidity failed = ");
-      Serial.println(Firebase.failed());
+
+      //Push temperatura
+      while(!fail){
+        Firebase.pushFloat("temperature", temperature);
+        Serial.print("Temperature failed = ");
+        fail = Firebase.failed();
+        Serial.println(fail);
+      }
+
+      fail = false;
+
+      //Push Humidade
+      while(!fail){
+        Firebase.pushFloat("humidity", humidity);
+        Serial.print("Humidity failed = ");
+        fail = Firebase.failed();
+        Serial.println(fail);
+      }
+
+      fail = false;
+
+      //Push Hora
+      while(!fail){
+        Firebase.pushString("time", hora)
+        Serial.print("Time failed = ");
+        fail = Firebase.failed();
+        Serial.println(fail);
+      }
       publishNewState = false;
-      if(Firebase.failed()){
-        Serial.println(Firebase.error());}
-    }else{
-      Serial.println("Error Publishing");
-    }
   }
 
   if (humidity > 47){
@@ -104,18 +139,5 @@ void loop() {
   } else {
     digitalWrite(LAMP_PIN, LOW);
   }
-    
-  
-
-  // Verifica o valor do sensor de presença
-  // LOW sem movimento
-  // HIGH com movimento
-  //int presence = digitalRead(PRESENCE_PIN);  
-  //Firebase.setBool("presence", presence == HIGH);
-
-  // Verifica o valor da lampada no firebase 
-  //bool lampValue = Firebase.getBool("lamp");
-  //digitalWrite(LAMP_PIN, lampValue ? HIGH : LOW);
-  //publishNewState = false;
   delay(1000);
 }
