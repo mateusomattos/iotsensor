@@ -135,7 +135,7 @@ function buildLineChart(el, label, data, time){
         xAxes: [{
           scaleLabel: {
             display: true,
-            labelString: 'Horas atrás'
+            labelString: 'Horas'
           }
         }]
       }     
