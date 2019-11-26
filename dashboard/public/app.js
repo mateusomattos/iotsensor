@@ -27,9 +27,9 @@
 
   // Registra as funções que atualizam os gráficos e dados atuais da telemetria
   tempRef.on('value', onNewData('currentTemp', 'tempLineChart' , 'Temperatura', 'ºC'));
-  umidRef.on('value', onNewData('currentUmid', 'umidLineChart' , 'Umidade', '%'));
+  umidRef.on('value', onNewData('currentUmid', 'umidLineChart' , 'Humidade', '%'));
   tempRef2.on('value', onNewData('currentTemp2', 'tempLineChart2' , 'Temperatura', 'ºC'));
-  umidRef2.on('value', onNewData('currentUmid2', 'umidLineChart2' , 'Umidade', '%'));
+  umidRef2.on('value', onNewData('currentUmid2', 'umidLineChart2' , 'Humidade', '%'));
   maxRef.on('value', onNewData('maxTemp', 'maxTempChart' , 'Temperatura', 'ºC'));
   minRef.on('value', onNewData('minTemp', 'minTempChart' , 'Temperatura', 'ºC'));
 
