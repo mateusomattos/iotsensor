@@ -33,6 +33,7 @@ void publish(){
 
 void setupPins(){
   pinMode(LAMP_PIN, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);  
   digitalWrite(LAMP_PIN, LOW);
   dht.begin();  
 }
@@ -144,5 +145,10 @@ void loop() {
   }
   
 }
-delay(1000);
+delay(500);
+  digitalWrite(LED_BUILTIN, HIGH);   // Turn the LED on (Note that LOW is the voltage level
+  // but actually the LED is on; this is because
+  // it is active low on the ESP-01)
+  delay(500);                      // Wait for a second
+  digitalWrite(LED_BUILTIN, LOW);
 }
