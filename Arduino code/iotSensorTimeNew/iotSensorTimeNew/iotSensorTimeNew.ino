@@ -15,9 +15,9 @@
 //#define WIFI_SSID "LGG6"
 //#define WIFI_PASSWORD "12345678"
 
-
 #define WIFI_SSID "OPORTOLIVING"
 #define WIFI_PASSWORD "oporto22"
+
 
 #define LAMP_PIN D3
 #define PRESENCE_PIN D4
@@ -27,13 +27,21 @@
 // Publique a cada 5 min
 #define PUBLISH_INTERVAL 1000*10*1
 
-DHT dht(DHT_PIN, DHTTYPE);
-Ticker ticker;
-bool publishNewState = true;
+//intervalos de tempo para publicacao
+#define HORA
+#define MINUTO
+#define SEGUNDO
 
-void publish(){
-  publishNewState = true;
-}
+
+int first = 1;
+String horaProximo;
+String proximaMedicao;
+int medirFlag = 0;
+bool medicaoAgora = false;
+String hora;
+
+DHT dht(DHT_PIN, DHTTYPE);
+
 
 void setupPins(){
   pinMode(LAMP_PIN, OUTPUT);
@@ -46,12 +54,22 @@ void setupWifi(){
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("connecting");
   while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(500);
+    digitalWrite(LED_BUILTIN, HIGH); 
     delay(500);
   }
   Serial.println();
   Serial.print("connected: ");
   Serial.println(WiFi.localIP());
+  delay(100);
+  digitalWrite(LED_BUILTIN, HIGH); 
+  delay(100);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(100);
+  digitalWrite(LED_BUILTIN, HIGH); 
+  delay(100);
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 void setupFirebase(){
@@ -60,41 +78,85 @@ void setupFirebase(){
 
 
 WiFiUDP udp;//Cria um objeto "UDP".
-NTPClient ntp(udp, "a.st1.ntp.br", 0* 3600, 60000); //Cria um objeto "NTP" com as configurações.
+NTPClient ntp(udp, "pool.ntp.org"); //Cria um objeto "NTP" com as configurações.
 
 
 
 void setup() {
   Serial.begin(115200);
-
+  
   setupPins();
+  digitalWrite(LED_BUILTIN, LOW);
   setupWifi();    
 
   setupFirebase();
 
-  // Registra o ticker para publicar de tempos em tempos
-  ticker.attach_ms(PUBLISH_INTERVAL, publish);
   ntp.begin();//Inicia o NTP.
   ntp.forceUpdate();//Força o Update.
+
 }
 
 void loop() {
+  digitalWrite(LED_BUILTIN, HIGH);
+
+  if(WiFi.status() != WL_CONNECTED){
+    WiFi.disconnect();
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    Serial.print("connecting");
+    while (WiFi.status() != WL_CONNECTED) {
+        digitalWrite(LED_BUILTIN, HIGH); 
+        delay(200);
+        digitalWrite(LED_BUILTIN, LOW);
+        delay(200);
+  }
+    
+  }
 
   float humidity = 0;
   bool fail = true;
   int principal = 1;
 
+  //medicaoAgora = Firebase.getBool("medir");
   // Hora
-  String hora = ntp.getFormattedTime(); //Armazena na váriavel HORA, o horario atual.
+  hora = ntp.getFormattedTime(); //Armazena na váriavel HORA, o horario atual.
   Serial.print("Hora: ");
   Serial.println(hora);
+
+  String horaAgora = hora.substring(0,2);
+  String minutoAgora = hora.substring(3,5);
+  String segundoAgora = hora.substring(6,9);
+
+  int horaAgoraInt = horaAgora.toInt();
+  int minutoAgoraInt = minutoAgora.toInt();
+  int segundoAgoraInt = segundoAgora.toInt();
+
+  if(proximaMedicao == hora){
+    medirFlag = 1;
+  }
+
+  if(horaAgoraInt == 23){
+    horaProximo = "00";
+  }
+
+  else{
+    horaAgoraInt++;
+
+    if(horaAgoraInt < 10){
+      horaProximo = "0"+String(horaAgoraInt);
+    }
+    
+    else{
+      horaProximo = String(horaAgoraInt);
+    }
+  }
+
+  proximaMedicao = horaProximo+":00:00";
+  Serial.println(proximaMedicao);
+
+
   
   // Apenas publique quando passar o tempo determinado ou na hora determinada
-  if(publishNewState){
-  //if(hora == "00:00:00" || hora == "01:00:00" || hora == "02:00:00" || hora == "03:00:00" || hora == "04:00:00" || hora == "05:00:00" || hora == "06:00:00" ||
-    //  hora == "07:00:00" || hora == "08:00:00" || hora == "09:00:00" || hora == "10:00:00" || hora == "11:00:00" || hora == "12:00:00" || hora == "13:00:00" || 
-      //hora == "14:00:00" || hora == "15:00:00" || hora == "16:00:00" || hora == "17:00:00" || hora == "18:00:00" || hora == "19:00:00" || hora == "20:00:00" || 
-      //hora == "21:00:00" || hora == "22:00:00" || hora == "23:00:00"){
+  if(medirFlag == 1 || medicaoAgora == true){
     Serial.println("Publish new State");
     // Obtem os dados do sensor DHT 
     // Humidade
@@ -116,6 +178,10 @@ void loop() {
         Serial.print("Temperature failed = ");
         fail = Firebase.failed();
         Serial.println(fail);
+        digitalWrite(LED_BUILTIN, LOW); 
+          delay(100);
+          digitalWrite(LED_BUILTIN, HIGH);
+          delay(100);
       }
 
       fail = true;
@@ -126,33 +192,33 @@ void loop() {
         Serial.print("Humidity failed = ");
         fail = Firebase.failed();
         Serial.println(fail);
+        digitalWrite(LED_BUILTIN, LOW); 
+          delay(100);
+          digitalWrite(LED_BUILTIN, HIGH);
+          delay(100);
       }
 
       fail = true;
       if(principal == 1){
-      //Push Hora
-      while(fail){
-        
-        Firebase.pushString("time", hora);
-        Serial.print("Time failed = ");
-        fail = Firebase.failed();
-        Serial.println(fail);
+        //Push Hora
+        while(fail){
+          
+          Firebase.pushString("time", hora);
+          Serial.print("Time failed = ");
+          fail = Firebase.failed();
+          Serial.println(fail);
+          digitalWrite(LED_BUILTIN, LOW); 
+          delay(100);
+          digitalWrite(LED_BUILTIN, HIGH);
+          delay(100);
+        }
       }
-      }
-      publishNewState = false;
-  }
+      medirFlag = 0;
+      Firebase.setBool("medir", false);
 
-  if (humidity > 47){
-    digitalWrite(LAMP_PIN, HIGH);
-  } else {
-    digitalWrite(LAMP_PIN, LOW);
   }
   
 }
+
 delay(500);
-  digitalWrite(LED_BUILTIN, HIGH);   // Turn the LED on (Note that LOW is the voltage level
-  // but actually the LED is on; this is because
-  // it is active low on the ESP-01)
-  delay(500);                      // Wait for a second
-  digitalWrite(LED_BUILTIN, LOW);
 }
